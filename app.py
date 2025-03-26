@@ -13,27 +13,6 @@ peak_units = peak_us_sales / launch_wac
 eunet = launch_wac * .50
 
 
-
-
-def ramp_frame():
-    data = pl.DataFrame({'units': ramp(t=commercial_window,K=(peak_us_sales/launch_wac),r=growth_rate,t0=inflection_point)})
-    data = data.with_columns(percent_peak = ((c.units*launch_wac) / peak_us_sales).round(2)).with_row_index('t',offset=1)
-    return data
-
-with st.expander('RAMP Controls'):
-    colc,cold = st.columns(2)
-    with colc:
-        growth_rate = st.number_input(label='Growth Rate', value=1, key='growth_rate')
-        commercial_window = st.number_input(label='Commercial Window (Years)', value=14, key='commercial_window')
-    with cold:
-        inflection_point= st.number_input(label='Inflection Point',value=5,key='inflection_point')
-
-def ramp(t=commercial_window,K=(peak_us_sales/launch_wac),r=growth_rate,t0=inflection_point) -> np.ndarray:
-    t = pl.arange(1, t+1, eager=True)
-    return K / (1 + np.exp(-r * (t - t0)))
-
-st.line_chart(ramp_frame(),x='t',y='percent_peak',use_container_width=True)
-
 with st.expander("GTN Controls"):
     cola,colb = st.columns(2)
     with cola:
@@ -154,6 +133,7 @@ with st.expander('Calendar Controls'):
                                                key='development_time_phase_3')
     development_time_registration = st.number_input(label='Development Time Registration', value=1.05,
                                                     key='development_time_registration')
+    commercial_window = st.number_input(label='Commercial Window (Years)', value=14, key='commercial_window')
 
 
 def calendar() -> pl.LazyFrame:
@@ -165,6 +145,24 @@ def calendar() -> pl.LazyFrame:
     return cal.filter(c.t > 0).with_columns(t=c.t.cum_sum())
 
 st.dataframe(calendar().collect())
+
+def ramp_frame():
+    data = pl.DataFrame({'units': ramp(t=commercial_window,K=(peak_us_sales/launch_wac),r=growth_rate,t0=inflection_point)})
+    data = data.with_columns(percent_peak = ((c.units*launch_wac) / peak_us_sales).round(2)).with_row_index('t',offset=1)
+    return data
+
+with st.expander('RAMP Controls'):
+    colc,cold = st.columns(2)
+    with colc:
+        growth_rate = st.number_input(label='Growth Rate', value=1, key='growth_rate')
+    with cold:
+        inflection_point= st.number_input(label='Inflection Point',value=5,key='inflection_point')
+
+def ramp(t=commercial_window,K=(peak_us_sales/launch_wac),r=growth_rate,t0=inflection_point) -> np.ndarray:
+    t = pl.arange(1, t+1, eager=True)
+    return K / (1 + np.exp(-r * (t - t0)))
+
+st.line_chart(ramp_frame(),x='t',y='percent_peak',use_container_width=True)
 
 
 with st.expander('Price Evolution Controls'):
